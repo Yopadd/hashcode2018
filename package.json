@@ -1,0 +1,12 @@
+{
+  "name": "hashcode2018",
+  "version": "1.0.0",
+  "description": "Hash Code 2018",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "mocha"
+  },
+  "author": "Yoann Boudex",
+  "license": "ISC"
+}
