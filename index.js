@@ -6,9 +6,11 @@ main()
 exec('zip -r ./out/source.zip index.js package.json test src')
 
 async function main () {
-  ['a_example', 'b_should_be_easy', 'c_no_hurry', 'd_metropolis', 'e_high_bonus'].forEach(input => {
-    example(input)
-  })
+  ['a_example', 'b_should_be_easy', 'c_no_hurry', 'd_metropolis', 'e_high_bonus']
+    // .slice(0, 1)
+    .forEach(input => {
+      example(input)
+    })
 }
 
 async function example (input) {
@@ -18,11 +20,11 @@ async function example (input) {
   let rides = lines.map((line, index) => {
     const arr = line.split(' ')
     return {
-      rideFrom: arr.slice(0, 2),
-      rideTo: arr.slice(2, 4),
-      earliestStart: arr[4],
-      latestFinish: arr[5],
-      id: index
+      rideFrom: arr.slice(0, 2).map(n => Number.parseInt(n)),
+      rideTo: arr.slice(2, 4).map(n => Number.parseInt(n)),
+      earliestStart: Number.parseInt(arr[4]),
+      latestFinish: Number.parseInt(arr[5]),
+      id: Number.parseInt(index)
     }
   })
 
@@ -37,8 +39,17 @@ async function example (input) {
 
   let tick = 0
   const selection = () => {
-    for (const ride of rides) {
-      if (ride.earliestStart < tick) {
+    for (const index in rides) {
+      if (!vehicules.filter(v => !v.assigned).length) {
+        break
+      } else {
+        rides[index].assigned = true
+        vehicules[0].assigned = true
+        vehicules[0].rides.push(rides[index])
+        vehicules[0].coords = rides[index].rideTo
+      }
+
+      if (rides[index].earliestStart < tick) {
         continue
       }
 
@@ -46,22 +57,13 @@ async function example (input) {
         if (a.assigned) {
           return 9999999999999999
         }
-        return distance(ride.rideFrom, a.coords) - (ride.rideFrom, b.coords)
+        return distance(rides[index].rideFrom, a.coords) - distance(rides[index].rideFrom, b.coords)
       })
 
       vehicules = vehicules.map((v) => {
-        v.distanceParcouru = distance(v.coords, ride.rideFrom) + distance(ride.rideFrom, ride.rideTo)
+        v.distanceParcouru = distance(v.coords, rides[index].rideFrom) + distance(rides[index].rideFrom, rides[index].rideTo)
         return v
       })
-
-      if (!vehicules.length) {
-        break
-      } else {
-        ride.assigned = true
-        vehicules[0].assigned = true
-        vehicules[0].rides.push(ride)
-        vehicules[0].coords = ride.rideTo
-      }
     }
 
     vehicules.map((v) => {
@@ -69,9 +71,9 @@ async function example (input) {
       return v
     })
 
-    tick = vehicules.sort((va, vb) => {
+    tick += vehicules.sort((va, vb) => {
       return vb.distanceParcouru - va.distanceParcouru
-    })[0]
+    })[0].distanceParcouru
 
     rides = rides.filter(r => !r.assigned)
 
@@ -85,5 +87,6 @@ async function example (input) {
     return v.rides.length + ' ' + v.rides.map(a => a.id).join(' ')
   })
 
+  console.log(sortie)
   writeOut(`${input}.out`, sortie.join('\n'))
 }
