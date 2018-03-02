@@ -1,92 +1,56 @@
-const {readIn, writeOut} = require('./src/read-write.js')
 const { exec } = require('child_process')
+const {readIn, writeOut} = require('./src/read-write.js')
+const Vehicle = require('./src/Vehicle.js')
 
 main()
-
 exec('zip -r ./out/source.zip index.js package.json test src')
 
-async function main () {
+function main () {
   ['a_example', 'b_should_be_easy', 'c_no_hurry', 'd_metropolis', 'e_high_bonus']
-    // .slice(0, 1)
+    .slice(3, 4)
     .forEach(input => {
-      example(input)
+      solve(input)
     })
 }
 
-async function example (input) {
+async function solve (input) {
   const file = await readIn(`${input}.in`)
   const [head, ...lines] = file.trim().split('\n')
   const [R, C, F, N, B, T] = head.split(' ')
-  let rides = lines.map((line, index) => {
+  const rides = lines.map((line, index) => {
     const arr = line.split(' ')
     return {
       rideFrom: arr.slice(0, 2).map(n => Number.parseInt(n)),
       rideTo: arr.slice(2, 4).map(n => Number.parseInt(n)),
       earliestStart: Number.parseInt(arr[4]),
       latestFinish: Number.parseInt(arr[5]),
-      id: Number.parseInt(index)
+      id: index,
+      finish: false,
+      assigned: false
     }
   })
 
-  let vehicules = []
-  for (var i = 0; i < F; i++) {
-    vehicules.push({id: i, coords: [0, 0], assigned: false, rides: []})
+  const vehicles = []
+  for (let i = 0; i < F; i++) {
+    vehicles.push(new Vehicle(i))
   }
+  simulation(T, rides, vehicles)
+  console.log('rides finish', rides.filter(ride => ride.finish).length)
+  console.log('rides unfinish', rides.filter(ride => !ride.finish).length)
+  console.log('rides total', N)
+  const results = vehicles.map(vehicle => {
+    return [vehicle.rides.length, ...vehicle.rides.map(a => a.id)].join(' ')
+  }).join('\n')
+  writeOut(`${input}.out`, results)
+}
 
-  let distance = (a, b) => {
-    return Math.abs(b[0] - a[0]) + Math.abs(b[1] - a[1])
-  }
-
-  let tick = 0
-  const selection = () => {
-    for (const index in rides) {
-      if (!vehicules.filter(v => !v.assigned).length) {
-        break
-      } else {
-        rides[index].assigned = true
-        vehicules[0].assigned = true
-        vehicules[0].rides.push(rides[index])
-        vehicules[0].coords = rides[index].rideTo
+function simulation (T, rides, vehicles) {
+  for (let tick = 0; tick < T; tick++) {
+    vehicles.map(vehicle => {
+      vehicle.run()
+      if (!vehicle.assigned) {
+        vehicle.selectBestRide(rides)
       }
-
-      if (rides[index].earliestStart < tick) {
-        continue
-      }
-
-      vehicules.sort((a, b) => {
-        if (a.assigned) {
-          return 9999999999999999
-        }
-        return distance(rides[index].rideFrom, a.coords) - distance(rides[index].rideFrom, b.coords)
-      })
-
-      vehicules = vehicules.map((v) => {
-        v.distanceParcouru = distance(v.coords, rides[index].rideFrom) + distance(rides[index].rideFrom, rides[index].rideTo)
-        return v
-      })
-    }
-
-    vehicules.map((v) => {
-      v.assigned = false
-      return v
     })
-
-    tick += vehicules.sort((va, vb) => {
-      return vb.distanceParcouru - va.distanceParcouru
-    })[0].distanceParcouru
-
-    rides = rides.filter(r => !r.assigned)
-
-    if (rides.length) {
-      selection()
-    }
   }
-
-  selection(vehicules)
-  let sortie = [...vehicules].map((v) => {
-    return v.rides.length + ' ' + v.rides.map(a => a.id).join(' ')
-  })
-
-  console.log(sortie)
-  writeOut(`${input}.out`, sortie.join('\n'))
 }
